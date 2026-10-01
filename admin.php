@@ -293,7 +293,7 @@ $pendapatanHariIni = $conn->query("SELECT COALESCE(SUM(total), 0) as total FROM 
 <body class="bg-[#f0f4f8]">
 
 <div class="flex min-h-screen">
-    <!-- Sidebar -->
+    <!-- SIDEBAR - SAMA UNTUK SEMUA HALAMAN -->
     <div class="sidebar w-64 p-6 fixed h-full overflow-y-auto z-10">
         <div class="flex items-center gap-3 mb-10">
             <?php 
@@ -320,6 +320,10 @@ $pendapatanHariIni = $conn->query("SELECT COALESCE(SUM(total), 0) as total FROM 
             <a href="menu.php" class="sidebar-item">
                 <i class="fas fa-utensils w-5"></i>
                 <span>Manajemen Menu</span>
+            </a>
+            <a href="meja.php" class="sidebar-item">
+                <i class="fas fa-chair w-5"></i>
+                <span>Manajemen Meja</span>
             </a>
             <a href="qr_generator.php" class="sidebar-item">
                 <i class="fas fa-qrcode w-5"></i>

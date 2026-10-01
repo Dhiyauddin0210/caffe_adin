@@ -121,7 +121,7 @@ include 'auth_check.php';
 <body class="bg-[#f0f4f8]">
 
 <div class="flex min-h-screen">
-    <!-- Sidebar -->
+    <!-- SIDEBAR - SAMA UNTUK SEMUA HALAMAN -->
     <div class="sidebar w-64 p-6 fixed h-full overflow-y-auto z-10">
         <div class="flex items-center gap-3 mb-10">
             <?php 
@@ -149,9 +149,17 @@ include 'auth_check.php';
                 <i class="fas fa-utensils w-5"></i>
                 <span>Manajemen Menu</span>
             </a>
+            <a href="meja.php" class="sidebar-item">
+                <i class="fas fa-chair w-5"></i>
+                <span>Manajemen Meja</span>
+            </a>
             <a href="qr_generator.php" class="sidebar-item">
                 <i class="fas fa-qrcode w-5"></i>
                 <span>QR Code Meja</span>
+            </a>
+            <a href="index.php" class="sidebar-item">
+                <i class="fas fa-store w-5"></i>
+                <span>Lihat Menu</span>
             </a>
             <a href="logout.php" class="sidebar-item logout">
                 <i class="fas fa-sign-out-alt w-5"></i>

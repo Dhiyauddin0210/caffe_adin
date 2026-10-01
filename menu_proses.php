@@ -14,15 +14,13 @@ if ($action == 'tambah') {
     $harga = $_POST['harga'];
     $gambar = '';
     
-    // Proses upload gambar
-    if (isset($_FILES['gambar']) && $_FILES['gambar']['error'] == 0) {
+    if (isset($_FILES['gambar']) && $_FILES['gambar']['error'] == 0 && !empty($_FILES['gambar']['name'])) {
         $target_dir = "uploads/";
-        $file_name = time() . '_' . basename($_FILES['gambar']['name']);
+        $imageFileType = strtolower(pathinfo($_FILES['gambar']['name'], PATHINFO_EXTENSION));
+        $file_name = time() . '.' . $imageFileType;
         $target_file = $target_dir . $file_name;
-        $imageFileType = strtolower(pathinfo($target_file, PATHINFO_EXTENSION));
         
-        // Validasi file
-        $allowed = ['jpg', 'jpeg', 'png'];
+        $allowed = ['jpg', 'jpeg', 'png', 'gif', 'webp'];
         if (in_array($imageFileType, $allowed)) {
             if (move_uploaded_file($_FILES['gambar']['tmp_name'], $target_file)) {
                 $gambar = $file_name;
@@ -43,7 +41,6 @@ if ($action == 'tambah') {
 } elseif ($action == 'hapus') {
     $id = $_GET['id'];
     
-    // Ambil nama gambar untuk dihapus
     $result = $conn->query("SELECT gambar FROM menu WHERE id = $id");
     $row = $result->fetch_assoc();
     if (!empty($row['gambar']) && file_exists('uploads/' . $row['gambar'])) {
@@ -59,31 +56,39 @@ if ($action == 'tambah') {
     $kategori_id = $_POST['kategori_id'];
     $harga = $_POST['harga'];
     $tersedia = isset($_POST['tersedia']) ? 1 : 0;
-    $gambar = $_POST['gambar_lama'] ?? '';
+    $gambar_lama = $_POST['gambar_lama'] ?? '';
+    $gambar = $gambar_lama;
     
-    // Proses upload gambar baru
-    if (isset($_FILES['gambar']) && $_FILES['gambar']['error'] == 0) {
+    // 🔥 CEK APAKAH ADA FILE BARU YANG DIUPLOAD
+    $upload_gambar_baru = false;
+    if (isset($_FILES['gambar']) && $_FILES['gambar']['error'] == 0 && !empty($_FILES['gambar']['name'])) {
         $target_dir = "uploads/";
-        $file_name = time() . '_' . basename($_FILES['gambar']['name']);
-        $target_file = $target_dir . $file_name;
-        $imageFileType = strtolower(pathinfo($target_file, PATHINFO_EXTENSION));
+        if (!is_dir($target_dir)) {
+            mkdir($target_dir, 0777, true);
+        }
         
-        $allowed = ['jpg', 'jpeg', 'png'];
+        $imageFileType = strtolower(pathinfo($_FILES['gambar']['name'], PATHINFO_EXTENSION));
+        $file_name = time() . '.' . $imageFileType;
+        $target_file = $target_dir . $file_name;
+        $allowed = ['jpg', 'jpeg', 'png', 'gif', 'webp'];
+        
         if (in_array($imageFileType, $allowed)) {
-            // Hapus gambar lama
-            if (!empty($gambar) && file_exists('uploads/' . $gambar)) {
-                unlink('uploads/' . $gambar);
-            }
-            
             if (move_uploaded_file($_FILES['gambar']['tmp_name'], $target_file)) {
+                // Hapus gambar lama hanya jika upload berhasil
+                if (!empty($gambar_lama) && file_exists('uploads/' . $gambar_lama)) {
+                    unlink('uploads/' . $gambar_lama);
+                }
                 $gambar = $file_name;
+                $upload_gambar_baru = true;
             }
         }
     }
     
+    // 🔥 INI YANG DIPERBAIKI! TIPE DATA BIND_PARAM
+    // Format: "siiisi" = string, integer, integer, integer, string, integer
     $sql = "UPDATE menu SET nama_menu=?, kategori_id=?, harga=?, tersedia=?, gambar=? WHERE id=?";
     $stmt = $conn->prepare($sql);
-    $stmt->bind_param("sissis", $nama_menu, $kategori_id, $harga, $tersedia, $gambar, $id);
+    $stmt->bind_param("siiisi", $nama_menu, $kategori_id, $harga, $tersedia, $gambar, $id);
     
     if ($stmt->execute()) {
         header('Location: menu.php?success=1');

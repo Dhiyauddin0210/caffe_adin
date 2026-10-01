@@ -120,7 +120,7 @@ $totalKategori = $conn->query("SELECT COUNT(*) as total FROM kategori")->fetch_a
 <body class="bg-[#f0f4f8]">
 
 <div class="flex min-h-screen">
-    <!-- Sidebar -->
+    <!-- SIDEBAR - HAPUS LINK "LIHAT MENU" KARENA REDUNDANT -->
     <div class="sidebar w-64 p-6 fixed h-full overflow-y-auto z-10">
         <div class="flex items-center gap-3 mb-10">
             <?php 
@@ -140,14 +140,23 @@ $totalKategori = $conn->query("SELECT COUNT(*) as total FROM kategori")->fetch_a
                 <i class="fas fa-chart-line w-5"></i>
                 <span>Dashboard</span>
             </a>
+            <a href="export.php" class="sidebar-item">
+                <i class="fas fa-file-export w-5"></i>
+                <span>Export Laporan</span>
+            </a>
             <a href="menu.php" class="sidebar-item active">
                 <i class="fas fa-utensils w-5"></i>
                 <span>Manajemen Menu</span>
             </a>
-            <a href="index.php" class="sidebar-item">
-                <i class="fas fa-store w-5"></i>
-                <span>Lihat Menu</span>
+            <a href="meja.php" class="sidebar-item">
+                <i class="fas fa-chair w-5"></i>
+                <span>Manajemen Meja</span>
             </a>
+            <a href="qr_generator.php" class="sidebar-item">
+                <i class="fas fa-qrcode w-5"></i>
+                <span>QR Code Meja</span>
+            </a>
+            <!-- 🔧 FIXED: Hapus link "Lihat Menu" karena redundant di halaman Manajemen Menu -->
             <a href="logout.php" class="sidebar-item logout">
                 <i class="fas fa-sign-out-alt w-5"></i>
                 <span>Logout</span>
@@ -169,6 +178,7 @@ $totalKategori = $conn->query("SELECT COUNT(*) as total FROM kategori")->fetch_a
             </button>
         </div>
 
+        <!-- Statistik -->
         <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
             <div class="stat-card">
                 <div class="flex items-center justify-between">

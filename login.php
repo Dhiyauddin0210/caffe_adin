@@ -2,9 +2,18 @@
 include 'config.php';
 session_start();
 
-// Jika sudah login, langsung ke admin
-if (isset($_SESSION['admin_logged_in']) && $_SESSION['admin_logged_in'] === true) {
-    header('Location: admin.php');
+// Jika sudah login, redirect sesuai role
+if (isset($_SESSION['admin_id'])) {
+    $role = $_SESSION['role'] ?? 'kasir';
+    if ($role == 'admin') {
+        header('Location: admin.php');
+    } elseif ($role == 'kasir') {
+        header('Location: kasir.php');
+    } elseif ($role == 'dapur') {
+        header('Location: dapur.php');
+    } else {
+        header('Location: index.php');
+    }
     exit();
 }
 
@@ -25,13 +34,23 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         
         if ($result->num_rows === 1) {
             $admin = $result->fetch_assoc();
-            $_SESSION['admin_logged_in'] = true;
-            $_SESSION['admin_id'] = $admin['id'];
-            $_SESSION['admin_username'] = $admin['username'];
-            $_SESSION['admin_nama'] = $admin['nama'];
-            $_SESSION['admin_role'] = $admin['role'];
             
-            header('Location: admin.php');
+            // SET SESSION
+            $_SESSION['admin_id'] = $admin['id'];
+            $_SESSION['admin_nama'] = $admin['nama_lengkap'] ?? $admin['username'];
+            $_SESSION['username'] = $admin['username'];
+            $_SESSION['role'] = $admin['role'] ?? 'kasir';
+            
+            // Redirect sesuai role
+            if ($admin['role'] == 'admin') {
+                header('Location: admin.php');
+            } elseif ($admin['role'] == 'kasir') {
+                header('Location: kasir.php');
+            } elseif ($admin['role'] == 'dapur') {
+                header('Location: dapur.php');
+            } else {
+                header('Location: index.php');
+            }
             exit();
         } else {
             $error = 'Username atau password salah!';
@@ -68,14 +87,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             position: absolute;
             inset: 0;
             background-image: 
-                /* Pola garis-garis halus */
                 linear-gradient(rgba(255,255,255,0.02) 1px, transparent 1px),
                 linear-gradient(90deg, rgba(255,255,255,0.02) 1px, transparent 1px),
-                /* Efek cahaya dari bawah */
                 radial-gradient(ellipse at 50% 100%, rgba(37, 99, 235, 0.15) 0%, transparent 60%),
-                /* Efek cahaya dari atas */
                 radial-gradient(ellipse at 50% 0%, rgba(59, 130, 246, 0.08) 0%, transparent 50%),
-                /* Gambar SVG pattern (restoran) */
                 url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%233b82f6' fill-opacity='0.05'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
             background-size: 60px 60px, 60px 60px, 100% 100%, 100% 100%, auto;
             pointer-events: none;
@@ -125,19 +140,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             33% { transform: translate(40px, -50px) scale(1.1); }
             66% { transform: translate(-30px, 30px) scale(0.9); }
             100% { transform: translate(20px, -20px) scale(1.05); }
-        }
-        
-        /* ===== ILUSTRASI RESTORAN DI SAMPING (Desktop) ===== */
-        .resto-illustration {
-            position: absolute;
-            right: 5%;
-            bottom: 5%;
-            z-index: 1;
-            opacity: 0.06;
-            font-size: 200px;
-            color: white;
-            pointer-events: none;
-            display: none;
         }
         
         /* ===== LOGIN CARD ===== */
@@ -323,7 +325,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             font-size: 13px;
             color: #94a3b8;
         }
-        .footer-text .demo-badge {
+        .demo-badge {
             display: inline-flex;
             align-items: center;
             gap: 6px;
@@ -333,15 +335,31 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             font-size: 12px;
             color: #475569;
         }
-        .footer-text .demo-badge i {
+        .demo-badge i {
             color: #2563eb;
         }
-        
-        @media (min-width: 1024px) {
-            .resto-illustration {
-                display: block;
-            }
+        .demo-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 6px;
+            margin-top: 8px;
         }
+        .demo-grid .role-item {
+            font-size: 11px;
+            padding: 4px 6px;
+            border-radius: 8px;
+            background: #f8fafc;
+        }
+        .demo-grid .role-item .role-name {
+            font-weight: 600;
+        }
+        .demo-grid .role-item .role-detail {
+            color: #94a3b8;
+            font-size: 10px;
+        }
+        .badge-admin { color: #1e40af; }
+        .badge-kasir { color: #065f46; }
+        .badge-dapur { color: #92400e; }
         
         @media (max-width: 480px) {
             .login-card {
@@ -362,6 +380,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 padding: 12px 14px 12px 44px;
                 font-size: 13px;
             }
+            .demo-grid {
+                grid-template-columns: 1fr;
+                gap: 4px;
+            }
         }
     </style>
 </head>
@@ -375,11 +397,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <div class="orb"></div>
     <div class="orb"></div>
     <div class="orb"></div>
-    
-    <!-- Ilustrasi Restoran -->
-    <div class="resto-illustration">
-        <i class="fas fa-utensils"></i>
-    </div>
 
     <!-- Login Card -->
     <div class="login-card">
@@ -428,7 +445,21 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         <div class="footer-text">
             <div class="demo-badge">
                 <i class="fas fa-info-circle"></i>
-                Demo: <strong>admin</strong> / <strong>admin123</strong>
+                Demo Akun:
+            </div>
+            <div class="demo-grid">
+                <div class="role-item">
+                    <div class="role-name badge-admin">🔑 Admin</div>
+                    <div class="role-detail">admin / admin123</div>
+                </div>
+                <div class="role-item">
+                    <div class="role-name badge-kasir">💳 Kasir</div>
+                    <div class="role-detail">kasir / kasir123</div>
+                </div>
+                <div class="role-item">
+                    <div class="role-name badge-dapur">🍳 Dapur</div>
+                    <div class="role-detail">dapur / dapur123</div>
+                </div>
             </div>
         </div>
     </div>

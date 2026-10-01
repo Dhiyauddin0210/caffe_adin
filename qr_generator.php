@@ -1,6 +1,10 @@
 <?php
 include 'config.php';
 include 'auth_check.php';
+
+// Ambil data meja
+$mejaResult = $conn->query("SELECT * FROM meja ORDER BY nomor_meja");
+$totalMeja = $mejaResult->num_rows;
 ?>
 <!DOCTYPE html>
 <html lang="id">
@@ -94,12 +98,23 @@ include 'auth_check.php';
             .sidebar { display: none !important; }
             .ml-64 { margin-left: 0 !important; }
         }
+        @keyframes fadeInUp {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .qr-card {
+            animation: fadeInUp 0.5s ease forwards;
+        }
+        .qr-card:nth-child(1) { animation-delay: 0.05s; }
+        .qr-card:nth-child(2) { animation-delay: 0.10s; }
+        .qr-card:nth-child(3) { animation-delay: 0.15s; }
+        .qr-card:nth-child(4) { animation-delay: 0.20s; }
     </style>
 </head>
 <body class="bg-[#f0f4f8]">
 
 <div class="flex min-h-screen">
-    <!-- Sidebar -->
+    <!-- SIDEBAR - SAMA UNTUK SEMUA HALAMAN -->
     <div class="sidebar w-64 p-6 fixed h-full overflow-y-auto z-10">
         <div class="flex items-center gap-3 mb-10">
             <?php 
@@ -119,9 +134,17 @@ include 'auth_check.php';
                 <i class="fas fa-chart-line w-5"></i>
                 <span>Dashboard</span>
             </a>
+            <a href="export.php" class="sidebar-item">
+                <i class="fas fa-file-export w-5"></i>
+                <span>Export Laporan</span>
+            </a>
             <a href="menu.php" class="sidebar-item">
                 <i class="fas fa-utensils w-5"></i>
                 <span>Manajemen Menu</span>
+            </a>
+            <a href="meja.php" class="sidebar-item">
+                <i class="fas fa-chair w-5"></i>
+                <span>Manajemen Meja</span>
             </a>
             <a href="qr_generator.php" class="sidebar-item active">
                 <i class="fas fa-qrcode w-5"></i>
@@ -152,16 +175,22 @@ include 'auth_check.php';
             </button>
         </div>
 
+        <?php if($totalMeja > 0): ?>
         <div class="bg-blue-50 border border-blue-200 text-blue-700 px-6 py-4 rounded-2xl mb-8 no-print">
             <i class="fas fa-info-circle mr-2"></i>
             Tempelkan QR Code di setiap meja. Pelanggan scan QR → langsung ke halaman menu dengan meja terpilih.
         </div>
+        <?php else: ?>
+        <div class="bg-yellow-50 border border-yellow-200 text-yellow-700 px-6 py-4 rounded-2xl mb-8 no-print">
+            <i class="fas fa-exclamation-triangle mr-2"></i>
+            Belum ada meja. Silakan tambahkan meja di <a href="meja.php" class="font-semibold underline">Manajemen Meja</a> terlebih dahulu.
+        </div>
+        <?php endif; ?>
 
         <div class="grid grid-cols-2 md:grid-cols-4 gap-6">
             <?php 
-            $mejaResult = $conn->query("SELECT * FROM meja ORDER BY nomor_meja");
             $base_url = "http://" . $_SERVER['HTTP_HOST'] . dirname($_SERVER['PHP_SELF']) . "/index.php?meja=";
-            
+            $mejaResult->data_seek(0);
             while($meja = $mejaResult->fetch_assoc()) { 
                 $qr_url = $base_url . $meja['nomor_meja'];
                 $qr_id = 'qr_' . $meja['nomor_meja'];

@@ -1,17 +1,39 @@
 <?php
 include 'config.php';
 
-// Ambil meja dari URL (otomatis dari QR)
+// ===== DITAMBAHKAN: Auth check untuk redirect jika user sudah login =====
+session_start();
+
+// Jika user sudah login, redirect ke dashboard sesuai role
+if (isset($_SESSION['admin_id'])) {
+    $role = $_SESSION['role'] ?? 'kasir';
+    if ($role == 'admin') {
+        header('Location: admin.php');
+        exit;
+    } elseif ($role == 'kasir') {
+        header('Location: kasir.php');
+        exit;
+    } elseif ($role == 'dapur') {
+        header('Location: dapur.php');
+        exit;
+    }
+}
+
+// ===== DITAMBAHKAN: Validasi meja lebih aman =====
 $meja = isset($_GET['meja']) ? (int)$_GET['meja'] : 1;
 
 // Validasi meja ada di database
 $cekMeja = $conn->query("SELECT * FROM meja WHERE nomor_meja = $meja");
 if ($cekMeja->num_rows == 0) {
-    die("Meja tidak ditemukan!");
+    // Redirect ke meja default 1 atau tampilkan pesan
+    header('Location: index.php?meja=1');
+    exit;
 }
 
 $kategoriResult = $conn->query("SELECT * FROM kategori");
-$menuResult = $conn->query("SELECT * FROM menu WHERE tersedia = 1");
+
+// AMBIL SEMUA MENU (TERMASUK YANG TIDAK TERSEDIA)
+$menuResult = $conn->query("SELECT * FROM menu ORDER BY tersedia DESC, nama_menu ASC");
 $menuData = [];
 while ($row = $menuResult->fetch_assoc()) {
     $menuData[] = $row;
@@ -64,6 +86,15 @@ while ($row = $menuResult->fetch_assoc()) {
         box-shadow: 0 20px 50px rgba(59, 130, 246, 0.15);
         border-color: rgba(59, 130, 246, 0.3);
     }
+    .menu-card.unavailable {
+        opacity: 0.85;
+        border-color: #e2e8f0;
+    }
+    .menu-card.unavailable:hover {
+        transform: translateY(-4px);
+        box-shadow: 0 10px 30px rgba(0,0,0,0.05);
+    }
+    
     .menu-card:nth-child(1) { animation-delay: 0.05s; }
     .menu-card:nth-child(2) { animation-delay: 0.10s; }
     .menu-card:nth-child(3) { animation-delay: 0.15s; }
@@ -154,6 +185,12 @@ while ($row = $menuResult->fetch_assoc()) {
         box-shadow: 0 8px 25px rgba(37, 99, 235, 0.4);
     }
     .add-btn:active { transform: scale(0.95); }
+    .add-btn:disabled {
+        opacity: 0.6;
+        cursor: not-allowed;
+        transform: none !important;
+        box-shadow: none !important;
+    }
     
     .cart-drawer {
         animation: slideUp 0.5s cubic-bezier(0.4, 0, 0.2, 1);
@@ -282,7 +319,25 @@ while ($row = $menuResult->fetch_assoc()) {
         box-shadow: 0 2px 10px rgba(0,0,0,0.08);
     }
     
-    /* ===== SEARCH BAR ===== */
+    .badge-unavailable {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%) rotate(-15deg);
+        background: rgba(239, 68, 68, 0.9);
+        color: white;
+        padding: 6px 20px;
+        border-radius: 8px;
+        font-size: 14px;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        z-index: 5;
+        border: 2px solid white;
+        box-shadow: 0 4px 15px rgba(239, 68, 68, 0.3);
+        backdrop-filter: blur(4px);
+    }
+    
     .search-input {
         border: 2px solid #e2e8f0;
         border-radius: 16px;
@@ -394,19 +449,29 @@ while ($row = $menuResult->fetch_assoc()) {
     <?php foreach ($menuData as $index => $item) { 
       $icons = ['🍛', '🍜', '🍲', '🥘', '🍗', '🥩', '🍣', '🍱', '🥙', '🌮', '🍝', '🧆'];
       $icon = $icons[$index % count($icons)];
+      $isAvailable = $item['tersedia'] == 1;
+      
+      // 🔥 FIX: Path gambar
+      $gambar = !empty($item['gambar']) ? 'uploads/' . $item['gambar'] : '';
+      $hasGambar = $gambar && file_exists($gambar);
     ?>
-      <div class="menu-card" data-kat="<?= $item['kategori_id'] ?>">
+      <div class="menu-card <?= !$isAvailable ? 'unavailable' : '' ?>" data-kat="<?= $item['kategori_id'] ?>">
         <div class="relative h-36 flex items-center justify-center overflow-hidden">
-          <?php 
-          $gambar = !empty($item['gambar']) ? 'uploads/' . $item['gambar'] : '';
-          if ($gambar && file_exists($gambar)): 
-          ?>
-            <img src="<?= $gambar ?>" alt="<?= $item['nama_menu'] ?>" class="w-full h-full object-cover transition-transform duration-500 hover:scale-110">
+          <?php if ($hasGambar): ?>
+            <img src="<?= $gambar ?>" alt="<?= $item['nama_menu'] ?>" 
+                 class="w-full h-full object-cover transition-transform duration-500 hover:scale-110">
           <?php else: ?>
             <div class="w-full h-full menu-image-placeholder flex items-center justify-center text-6xl">
               <span class="drop-shadow-lg"><?= $icon ?></span>
             </div>
           <?php endif; ?>
+          
+          <?php if (!$isAvailable): ?>
+            <div class="badge-unavailable">
+              <i class="fas fa-times-circle mr-1"></i> Habis
+            </div>
+          <?php endif; ?>
+          
           <div class="absolute top-3 right-3 badge-rating">
             <i class="fas fa-star text-yellow-400 mr-0.5 text-xs"></i> 4.8
           </div>
@@ -414,10 +479,16 @@ while ($row = $menuResult->fetch_assoc()) {
         <div class="p-4">
           <h3 class="font-bold text-gray-800 text-sm line-clamp-1"><?= $item['nama_menu'] ?></h3>
           <p class="price text-sm mt-1"><?= number_format($item['harga'], 0, ',', '.') ?></p>
-          <button onclick='tambahKeranjang(<?= $item["id"] ?>, "<?= addslashes($item["nama_menu"]) ?>", <?= $item["harga"] ?>)'
-            class="add-btn mt-3">
-            <i class="fas fa-plus text-sm"></i> Tambah
-          </button>
+          <?php if ($isAvailable): ?>
+            <button onclick='tambahKeranjang(<?= $item["id"] ?>, "<?= addslashes($item["nama_menu"]) ?>", <?= $item["harga"] ?>)'
+              class="add-btn mt-3">
+              <i class="fas fa-plus text-sm"></i> Tambah
+            </button>
+          <?php else: ?>
+            <button disabled class="mt-3 w-full bg-gray-200 text-gray-500 text-sm font-semibold py-2.5 rounded-xl cursor-not-allowed flex items-center justify-center gap-2">
+              <i class="fas fa-times-circle"></i> Tidak Tersedia
+            </button>
+          <?php endif; ?>
         </div>
       </div>
     <?php } ?>
@@ -576,7 +647,6 @@ function filterKategori(katId) {
   });
   event.target.classList.add('active');
 
-  // Reset search
   document.getElementById('searchMenu').value = '';
   document.getElementById('searchResult').classList.add('hidden');
 
@@ -667,7 +737,6 @@ searchInput.addEventListener('keyup', function() {
         }
     });
     
-    // Tampilkan hasil jika tidak ada yang ditemukan
     if (keyword !== '' && found === 0) {
         resultDiv.innerHTML = `
             <div class="text-center py-10 bg-white rounded-2xl shadow-sm border border-gray-100">

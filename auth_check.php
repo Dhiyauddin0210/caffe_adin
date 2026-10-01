@@ -1,22 +1,79 @@
 <?php
 session_start();
 
-// Cek apakah user sudah login
-if (!isset($_SESSION['admin_logged_in']) || $_SESSION['admin_logged_in'] !== true) {
-    header('Location: login.php');
-    exit();
+// ===== CEK KONEKSI DATABASE (DITAMBAHKAN) =====
+if (!isset($conn)) {
+    // Cari file koneksi
+    $possible_files = ['config.php', 'koneksi.php', 'db.php', 'database.php'];
+    $found = false;
+    foreach ($possible_files as $file) {
+        if (file_exists($file)) {
+            require_once $file;
+            $found = true;
+            break;
+        }
+    }
+    if (!$found) {
+        die("File koneksi database tidak ditemukan! Buat file config.php");
+    }
 }
 
-// Cek role (opsional)
+// Cek login
+if (!isset($_SESSION['admin_id'])) {
+    header('Location: login.php');
+    exit;
+}
+
+// Ambil role dari session
+$role = $_SESSION['role'] ?? 'kasir';
+
+// ===== REDIRECT OTOMATIS KE DASHBOARD SESUAI ROLE =====
+$current_page = basename($_SERVER['PHP_SELF']);
+
+// Jika di index.php, redirect ke dashboard sesuai role
+if ($current_page == 'index.php') {
+    if ($role == 'admin') {
+        header('Location: admin.php');
+    } elseif ($role == 'kasir') {
+        header('Location: kasir.php');
+    } elseif ($role == 'dapur') {
+        header('Location: dapur.php');
+    } else {
+        header('Location: login.php');
+    }
+    exit;
+}
+
+// Fungsi cek akses (hanya untuk role tertentu)
+function cekAkses($roles = []) {
+    global $role;
+    if (!in_array($role, $roles)) {
+        if ($role == 'admin') {
+            header('Location: admin.php');
+        } elseif ($role == 'kasir') {
+            header('Location: kasir.php');
+        } elseif ($role == 'dapur') {
+            header('Location: dapur.php');
+        } else {
+            header('Location: login.php');
+        }
+        exit;
+    }
+}
+
+// Fungsi cek role
 function isAdmin() {
-    return isset($_SESSION['admin_role']) && $_SESSION['admin_role'] === 'admin';
+    global $role;
+    return $role == 'admin';
 }
 
 function isKasir() {
-    return isset($_SESSION['admin_role']) && $_SESSION['admin_role'] === 'kasir';
+    global $role;
+    return $role == 'kasir' || $role == 'admin';
 }
 
-function isChef() {
-    return isset($_SESSION['admin_role']) && $_SESSION['admin_role'] === 'chef';
+function isDapur() {
+    global $role;
+    return $role == 'dapur' || $role == 'admin';
 }
 ?>
